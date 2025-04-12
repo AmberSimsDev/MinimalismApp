@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import asdigital.minimalismapp.ui.theme.MinimalismAppTheme
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -37,7 +38,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    minimalistScreen()
+                    minimalistScreen(applicationContext)
                 }
             }
         }
@@ -45,16 +46,22 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun minimalistScreen(){
+fun minimalistScreen(context: Context) {
 
-    var itemsInValue by remember{mutableStateOf(MyCounter.getIncreaseCounterOne())}
-    var itemsOutValue by remember{mutableStateOf(MyCounter.getIncreaseCounterTwo())}
+    //Used to store / save the data
+    val dataStore = remember { CounterDataStore(context) }
+    val coroutineScope = rememberCoroutineScope()
+
+    // Holds latest counter from DataStore
+    val itemsInValue by dataStore.getCounterFlow("items_in_key").collectAsState(initial = 0)
+    val itemsOutValue by dataStore.getCounterFlow("items_out_key").collectAsState(initial = 0)
 
 
-    
-    Column(modifier = Modifier.fillMaxSize(), 
-        horizontalAlignment = Alignment.CenterHorizontally, 
-        verticalArrangement = Arrangement.Center) {
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
 
         Text(text = "Minimalism App")
 
@@ -65,7 +72,11 @@ fun minimalistScreen(){
 
         //BUTTON 1
         Button(onClick = {
-            itemsInValue = MyCounter.increaseCounterOne()}) {
+            coroutineScope.launch {
+                dataStore.saveCounter("items_in_key", itemsInValue + 1)
+            }
+        }) {
+
             Text(text = "Items In")
         }
 
@@ -75,18 +86,32 @@ fun minimalistScreen(){
 
         //BUTTON 2
         Button(onClick = {
-            itemsOutValue = MyCounter.increaseCounterTwo()}) {
-            Text(text= "Items Out")
+            coroutineScope.launch {
+                dataStore.saveCounter("items_out_key", itemsOutValue + 1)
+            }
+        }) {
 
+            Text(text = "Items Out")
+        }
+
+        Spacer(modifier = Modifier.height(48.dp))
+        Button(onClick = {
+            coroutineScope.launch {
+                dataStore.saveCounter("items_in_key", 0)
+                dataStore.saveCounter("items_out_key", 0)
+            }
+        }) {
+
+            Text(text = "Reset")
         }
     }
-    
-}
 
+}
+/*
 @Preview(showBackground = true)
 @Composable
 fun GreetingPreview() {
     MinimalismAppTheme {
-      minimalistScreen()
+        minimalistScreen()
     }
-}
+}*/
